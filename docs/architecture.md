@@ -22,15 +22,15 @@ graph TD
     end
 
     %% Connections
-    ESP32 <-->|MQTT (Pub/Sub)| EMQX
-    Simulator <-->|MQTT (Pub/Sub)| EMQX
+    ESP32 <-->|"MQTT"| EMQX
+    Simulator <-->|"MQTT"| EMQX
     
-    EMQX <-->|MQTT (Spring Integration)| Spring
+    EMQX <-->|"MQTT"| Spring
     
-    Spring <-->|JPA / Hibernate| DB
+    Spring <-->|"JPA"| DB
     
-    React <-->|REST API (JSON/JWT)| Spring
-    Flutter <-->|REST API (JSON/JWT)| Spring
+    React <-->|"REST API"| Spring
+    Flutter <-->|"REST API"| Spring
 
     classDef backend fill:#f9f2f4,stroke:#d0021b,stroke-width:2px;
     classDef broker fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px;
