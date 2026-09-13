@@ -1,15 +1,46 @@
 # Architecture
 
-```text
-Device Simulator hoặc ESP32 thật
-        ↕ MQTT
-EMQX MQTT Broker
-        ↕ MQTT
-Spring Boot Backend
-        ↕
-PostgreSQL
-        ↕ REST API
-ReactJS Website / Flutter Mobile App
+```mermaid
+graph TD
+    subgraph Edge["🔌 Edge Layer (Thiết bị)"]
+        ESP32["ESP32 & Sensors<br/>(Nhiệt, Ẩm, Sáng, Đất)"]
+        Simulator["Python Simulator<br/>(Thiết bị ảo)"]
+    end
+
+    subgraph Broker["🌐 Message Broker"]
+        EMQX[("EMQX v5<br/>MQTT Broker")]
+    end
+
+    subgraph Core["⚙️ Core Backend"]
+        Spring["Spring Boot 3<br/>(REST API & MQTT Client)"]
+        DB[(PostgreSQL 16<br/>Database)]
+    end
+
+    subgraph Presentation["💻 Presentation Layer"]
+        React["ReactJS Web<br/>Dashboard"]
+        Flutter["Flutter<br/>Mobile App"]
+    end
+
+    %% Connections
+    ESP32 <-->|MQTT (Pub/Sub)| EMQX
+    Simulator <-->|MQTT (Pub/Sub)| EMQX
+    
+    EMQX <-->|MQTT (Spring Integration)| Spring
+    
+    Spring <-->|JPA / Hibernate| DB
+    
+    React <-->|REST API (JSON/JWT)| Spring
+    Flutter <-->|REST API (JSON/JWT)| Spring
+
+    classDef backend fill:#f9f2f4,stroke:#d0021b,stroke-width:2px;
+    classDef broker fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px;
+    classDef edge fill:#e8f5e9,stroke:#43a047,stroke-width:2px;
+    classDef frontend fill:#fff3e0,stroke:#fb8c00,stroke-width:2px;
+
+    class Spring,DB backend;
+    class EMQX broker;
+    class ESP32,Simulator edge;
+    class React,Flutter frontend;
 ```
 
 ## Luồng hoạt động
