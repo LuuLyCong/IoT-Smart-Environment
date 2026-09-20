@@ -73,6 +73,8 @@ services:
       - iot_network
 
   simulator:
+    profiles:
+      - simulation
     build:
       context: ./device-simulator
     container_name: iot_simulator
