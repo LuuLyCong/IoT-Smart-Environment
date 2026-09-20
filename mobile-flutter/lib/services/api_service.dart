@@ -1,32 +1,42 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService extends ChangeNotifier {
-  // Use 10.0.2.2 for Android emulator to access host localhost
-  final String baseUrl = 'http://10.0.2.2:8080/api/v1';
+  // Default to emulator 10.0.2.2, can be configured to host LAN IP for physical device
+  String _baseUrl = 'http://10.0.2.2:8080/api/v1';
   String? _token;
   String? _role;
 
+  String get baseUrl => _baseUrl;
   bool get isAuthenticated => _token != null;
   String? get role => _role;
 
   ApiService() {
-    _loadToken();
+    _loadSettings();
   }
 
-  Future<void> _loadToken() async {
+  Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('token');
     _role = prefs.getString('role');
+    _baseUrl = prefs.getString('baseUrl') ?? 'http://10.0.2.2:8080/api/v1';
+    notifyListeners();
+  }
+
+  Future<void> setBaseUrl(String url) async {
+    _baseUrl = url.trim();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('baseUrl', _baseUrl);
     notifyListeners();
   }
 
   Future<bool> login(String username, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/login'),
+        Uri.parse('$_baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'username': username, 'password': password}),
       );
@@ -42,7 +52,7 @@ class ApiService extends ChangeNotifier {
         return true;
       }
     } catch (e) {
-      debugPrint(e.toString());
+      debugPrint('Login error: $e');
     }
     return false;
   }
@@ -59,14 +69,14 @@ class ApiService extends ChangeNotifier {
   Future<Map<String, dynamic>?> getDevice(String deviceId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/devices/$deviceId'),
+        Uri.parse('$_baseUrl/devices/$deviceId'),
         headers: {'Authorization': 'Bearer $_token'},
       );
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
     } catch (e) {
-      debugPrint(e.toString());
+      debugPrint('getDevice error: $e');
     }
     return null;
   }
@@ -74,14 +84,32 @@ class ApiService extends ChangeNotifier {
   Future<Map<String, dynamic>?> getLatestTelemetry(String deviceId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/devices/$deviceId/telemetry/latest'),
+        Uri.parse('$_baseUrl/devices/$deviceId/telemetry/latest'),
         headers: {'Authorization': 'Bearer $_token'},
       );
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
     } catch (e) {
-      debugPrint(e.toString());
+      debugPrint('getLatestTelemetry error: $e');
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> getLatestCommand(String deviceId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/devices/$deviceId/commands?size=1'),
+        headers: {'Authorization': 'Bearer $_token'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['content'] != null && (data['content'] as List).isNotEmpty) {
+          return data['content'][0];
+        }
+      }
+    } catch (e) {
+      debugPrint('getLatestCommand error: $e');
     }
     return null;
   }
@@ -89,16 +117,16 @@ class ApiService extends ChangeNotifier {
   Future<bool> sendCommand(String deviceId, String action) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/devices/$deviceId/commands'),
+        Uri.parse('$_baseUrl/devices/$deviceId/commands'),
         headers: {
           'Authorization': 'Bearer $_token',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: jsonEncode({'action': action}),
       );
       return response.statusCode == 200;
     } catch (e) {
-      debugPrint(e.toString());
+      debugPrint('sendCommand error: $e');
     }
     return false;
   }

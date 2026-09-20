@@ -49,12 +49,52 @@ public class DeviceService {
         }
     }
 
-    public List<Device> getAllDevices() {
-        return deviceRepository.findAll();
+    /**
+     * Heartbeat watchdog: If an ONLINE device has not sent telemetry / data for > 10 seconds,
+     * immediately mark it as OFFLINE.
+     */
+    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 3000)
+    @Transactional
+    public void checkDeviceInactivity() {
+        ZonedDateTime cutoff = ZonedDateTime.now().minusSeconds(10);
+        List<Device> devices = deviceRepository.findAll();
+        for (Device device : devices) {
+            if ("ONLINE".equals(device.getStatus())) {
+                if (device.getLastSeenAt() == null || device.getLastSeenAt().isBefore(cutoff)) {
+                    device.setStatus("OFFLINE");
+                    device.setUpdatedAt(ZonedDateTime.now());
+                    deviceRepository.save(device);
+                    log.info("Watchdog: Device {} set to OFFLINE due to inactivity (last seen: {})",
+                            device.getDeviceId(), device.getLastSeenAt());
+                }
+            }
+        }
     }
 
+    @Transactional
+    public List<Device> getAllDevices() {
+        List<Device> devices = deviceRepository.findAll();
+        ZonedDateTime cutoff = ZonedDateTime.now().minusSeconds(10);
+        for (Device device : devices) {
+            if ("ONLINE".equals(device.getStatus()) && (device.getLastSeenAt() == null || device.getLastSeenAt().isBefore(cutoff))) {
+                device.setStatus("OFFLINE");
+                device.setUpdatedAt(ZonedDateTime.now());
+                deviceRepository.save(device);
+            }
+        }
+        return devices;
+    }
+
+    @Transactional
     public Device getDeviceByDeviceId(String deviceId) {
-        return deviceRepository.findByDeviceId(deviceId)
+        Device device = deviceRepository.findByDeviceId(deviceId)
                 .orElseThrow(() -> new RuntimeException("Device not found"));
+        ZonedDateTime cutoff = ZonedDateTime.now().minusSeconds(10);
+        if ("ONLINE".equals(device.getStatus()) && (device.getLastSeenAt() == null || device.getLastSeenAt().isBefore(cutoff))) {
+            device.setStatus("OFFLINE");
+            device.setUpdatedAt(ZonedDateTime.now());
+            device = deviceRepository.save(device);
+        }
+        return device;
     }
 }

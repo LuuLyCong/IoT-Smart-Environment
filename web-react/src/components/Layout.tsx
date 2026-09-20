@@ -1,71 +1,120 @@
+import { useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { AppBar, Toolbar, Typography, Button, Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, CssBaseline } from '@mui/material'
-import DashboardIcon from '@mui/icons-material/Dashboard'
-import ListAltIcon from '@mui/icons-material/ListAlt'
-import LogoutIcon from '@mui/icons-material/Logout'
 import { useAuth } from '../contexts/AuthContext'
-
-const drawerWidth = 240
+import { useThemeMode } from '../contexts/ThemeContext'
 
 export default function Layout() {
-  const { logout, role, token } = useAuth()
+  const [isSlim, setIsSlim] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+
+  const { role, logout } = useAuth()
+  const { mode, toggleTheme } = useThemeMode()
   const navigate = useNavigate()
   const location = useLocation()
 
-  if (!token) return null
+  const currentPath = location.pathname
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-    { text: 'History Logs', icon: <ListAltIcon />, path: '/logs' },
-  ]
+  const handleNav = (path: string) => {
+    navigate(path)
+    setIsOpen(false)
+  }
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: '#004aad' }}>
-        <Toolbar>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
-            IoT Smart Environment Pro
-          </Typography>
-          <Typography variant="body1" sx={{ mr: 2 }}>
-            Role: {role}
-          </Typography>
-          <Button color="inherit" onClick={logout} startIcon={<LogoutIcon />}>
-            Logout
-          </Button>
-        </Toolbar>
-      </AppBar>
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
-        }}
-      >
-        <Toolbar />
-        <Box sx={{ overflow: 'auto' }}>
-          <List>
-            {menuItems.map((item) => (
-              <ListItem key={item.text} disablePadding>
-                <ListItemButton 
-                  selected={location.pathname === item.path}
-                  onClick={() => navigate(item.path)}
-                >
-                  <ListItemIcon sx={{ color: location.pathname === item.path ? '#004aad' : 'inherit' }}>
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText primary={item.text} />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-      </Drawer>
-      <Box component="main" sx={{ flexGrow: 1, p: 3, bgcolor: '#f4f6f8', minHeight: '100vh' }}>
-        <Toolbar />
-        <Outlet />
-      </Box>
-    </Box>
+    <div>
+      {/* Header */}
+      <header className="top">
+        <button
+          className="menu-btn"
+          id="menuBtn"
+          aria-label="Mở menu"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <svg className="i">
+            <use href="#i-menu" />
+          </svg>
+        </button>
+
+        <div className="brand" style={{ cursor: 'pointer' }} onClick={() => handleNav('/')}>
+          <div className="logo">
+            <svg className="i">
+              <use href="#i-chip" />
+            </svg>
+          </div>
+          <b>IoT Smart Environment</b>
+          <em>Pro</em>
+        </div>
+
+        <div className="spacer" />
+
+        <span className="pill role">Role: {role || 'ADMIN'}</span>
+
+        <button
+          className="icon-btn"
+          id="themeBtn"
+          aria-label="Đổi giao diện sáng/tối"
+          onClick={toggleTheme}
+          title={`Chuyển sang chế độ ${mode === 'dark' ? 'Sáng' : 'Tối'}`}
+        >
+          <svg className="i">
+            <use href={mode === 'dark' ? '#i-moon' : '#i-sun'} />
+          </svg>
+        </button>
+
+        <button className="ghost" id="logoutBtn" onClick={logout}>
+          <svg className="i">
+            <use href="#i-out" />
+          </svg>
+          Đăng xuất
+        </button>
+      </header>
+
+      {/* Shell with Sidebar and Main Content */}
+      <div className={`shell ${isSlim ? 'slim' : ''} ${isOpen ? 'open' : ''}`} id="shell">
+        <aside className="side">
+          <button
+            className="nav"
+            aria-current={currentPath === '/' ? 'page' : undefined}
+            onClick={() => handleNav('/')}
+          >
+            <svg className="i">
+              <use href="#i-dash" />
+            </svg>
+            <span>Dashboard</span>
+          </button>
+
+          <button
+            className="nav"
+            aria-current={currentPath === '/logs' ? 'page' : undefined}
+            onClick={() => handleNav('/logs')}
+          >
+            <svg className="i">
+              <use href="#i-hist" />
+            </svg>
+            <span>History Logs</span>
+          </button>
+
+          <div className="grow" />
+
+          <button
+            className="side-foot"
+            id="collapse"
+            onClick={() => setIsSlim(!isSlim)}
+            title={isSlim ? 'Mở rộng menu' : 'Thu gọn menu'}
+          >
+            <svg className="i">
+              <use href="#i-panel" />
+            </svg>
+            <span>{isSlim ? 'Mở rộng' : 'Thu gọn menu'}</span>
+          </button>
+        </aside>
+
+        {/* Backdrop for mobile navigation */}
+        <div className="scrim" id="scrim" onClick={() => setIsOpen(false)} />
+
+        <main className="main">
+          <Outlet />
+        </main>
+      </div>
+    </div>
   )
 }

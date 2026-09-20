@@ -12,6 +12,8 @@ import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -20,7 +22,9 @@ public class MqttMessageListener {
     private final TelemetryService telemetryService;
     private final CommandService commandService;
     private final DeviceService deviceService;
-    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @Bean
     @ServiceActivator(inputChannel = "mqttInputChannel")

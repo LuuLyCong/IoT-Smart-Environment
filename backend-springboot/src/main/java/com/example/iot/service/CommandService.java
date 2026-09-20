@@ -32,21 +32,38 @@ public class CommandService {
     private final MqttGateway mqttGateway;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Transactional
     public Command sendCommand(String deviceId, String action) {
+        return sendCommand(deviceId, action, null, null);
+    }
+
+    public Command sendCommand(String deviceId, String action, String line1, String line2) {
         Device device = deviceRepository.findByDeviceId(deviceId)
                 .orElseThrow(() -> new RuntimeException("Device not found"));
 
-        if (!"LED_ON".equals(action) && !"LED_OFF".equals(action)) {
-            throw new IllegalArgumentException("Invalid action");
+        if (!"LED_ON".equals(action) && !"LED_OFF".equals(action) 
+                && !"BUZZER_ON".equals(action) && !"BUZZER_OFF".equals(action)
+                && !"DISPLAY_TEXT".equals(action)) {
+            throw new IllegalArgumentException("Invalid action: " + action);
+        }
+
+        // Optimistically update device LED state in DB so subsequent status queries immediately reflect it
+        if ("LED_ON".equals(action)) {
+            device.setLedState(true);
+            device.setUpdatedAt(ZonedDateTime.now());
+            deviceRepository.save(device);
+        } else if ("LED_OFF".equals(action)) {
+            device.setLedState(false);
+            device.setUpdatedAt(ZonedDateTime.now());
+            deviceRepository.save(device);
         }
 
         Command command = new Command();
         command.setId(UUID.randomUUID());
         command.setDeviceId(deviceId);
         command.setAction(action);
-        command.setStatus("PENDING");
+        command.setStatus("SENT");
         command.setCreatedAt(ZonedDateTime.now());
+        command.setSentAt(ZonedDateTime.now());
         
         String username = SecurityContextHolder.getContext().getAuthentication() != null 
                 ? SecurityContextHolder.getContext().getAuthentication().getName() : "system";
@@ -57,19 +74,20 @@ public class CommandService {
             payloadMap.put("commandId", command.getId().toString());
             payloadMap.put("action", action);
             payloadMap.put("timestamp", ZonedDateTime.now().toString());
+            if ("DISPLAY_TEXT".equals(action)) {
+                payloadMap.put("line1", line1 != null ? line1 : "");
+                payloadMap.put("line2", line2 != null ? line2 : "");
+            }
             String payloadJson = objectMapper.writeValueAsString(payloadMap);
             command.setPayload(payloadJson);
             
-            commandRepository.save(command);
+            // Save and flush before sending over MQTT
+            commandRepository.saveAndFlush(command);
 
             String topic = "device/" + deviceId + "/command";
             mqttGateway.sendToMqtt(topic, 1, payloadJson);
             
-            command.setStatus("SENT");
-            command.setSentAt(ZonedDateTime.now());
-            commandRepository.save(command);
-            
-            log.info("Sent command {} to device {}", command.getId(), deviceId);
+            log.info("Sent command {} ({}) to device {}", command.getId(), action, deviceId);
             return command;
             
         } catch (JsonProcessingException e) {
@@ -88,6 +106,13 @@ public class CommandService {
         if (ack.getCommandId() == null) return;
         
         Optional<Command> cmdOpt = commandRepository.findById(ack.getCommandId());
+        if (cmdOpt.isEmpty()) {
+            try {
+                Thread.sleep(150);
+            } catch (InterruptedException ignored) {}
+            cmdOpt = commandRepository.findById(ack.getCommandId());
+        }
+
         if (cmdOpt.isPresent()) {
             Command command = cmdOpt.get();
             command.setStatus("ACKNOWLEDGED");

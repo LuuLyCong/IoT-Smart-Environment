@@ -9,18 +9,21 @@ BROKER = os.getenv("MQTT_BROKER", "localhost")
 PORT = int(os.getenv("MQTT_PORT", 1883))
 NUM_DEVICES = int(os.getenv("NUM_DEVICES", 1))
 
+def get_utc_timestamp():
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
 class Device:
     def __init__(self, device_id):
         self.device_id = device_id
         self.led_state = False
         self.client = mqtt.Client(client_id=f"simulator-{self.device_id}")
         
-        # Last Will and Testament
+        # Last Will and Testament (LWT) - Retained OFFLINE
         lwm_topic = f"device/{self.device_id}/status"
         lwm_payload = json.dumps({
             "deviceId": self.device_id,
             "status": "OFFLINE",
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+            "timestamp": get_utc_timestamp()
         })
         self.client.will_set(lwm_topic, lwm_payload, qos=1, retain=True)
 
@@ -41,16 +44,17 @@ class Device:
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             print(f"[{self.device_id}] Connected successfully.")
-            # Publish ONLINE status
+            # Publish ONLINE status (Retained)
             status_topic = f"device/{self.device_id}/status"
             status_payload = json.dumps({
                 "deviceId": self.device_id,
                 "status": "ONLINE",
-                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+                "timestamp": get_utc_timestamp()
             })
             self.client.publish(status_topic, status_payload, qos=1, retain=True)
+            print(f"[{self.device_id}] Published ONLINE status to {status_topic}")
             
-            # Subscribe to command
+            # Subscribe to command topic with QoS 1
             command_topic = f"device/{self.device_id}/command"
             self.client.subscribe(command_topic, qos=1)
             print(f"[{self.device_id}] Subscribed to {command_topic}")
@@ -69,10 +73,12 @@ class Device:
             
             if action == "LED_ON":
                 self.led_state = True
+                print(f"[{self.device_id}] LED turned ON")
             elif action == "LED_OFF":
                 self.led_state = False
+                print(f"[{self.device_id}] LED turned OFF")
                 
-            # Publish ACK
+            # Publish ACK - keeping exact commandId received from backend
             ack_topic = f"device/{self.device_id}/command/ack"
             ack_payload = json.dumps({
                 "commandId": command_id,
@@ -80,16 +86,16 @@ class Device:
                 "action": action,
                 "status": "ACKNOWLEDGED",
                 "led": self.led_state,
-                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+                "timestamp": get_utc_timestamp()
             })
-            self.client.publish(ack_topic, ack_payload, qos=1)
-            print(f"[{self.device_id}] Sent ACK for command {command_id}")
+            self.client.publish(ack_topic, ack_payload, qos=1, retain=False)
+            print(f"[{self.device_id}] Sent ACK for command {command_id}: {ack_payload}")
             
         except Exception as e:
             print(f"[{self.device_id}] Error processing message: {e}")
 
     def publish_telemetry(self):
-        temp = round(random.uniform(25.0, 35.0), 1)
+        temp = round(random.uniform(26.0, 36.5), 1)
         hum = round(random.uniform(50.0, 80.0), 1)
         ill = round(random.uniform(200.0, 800.0), 1)
         soil = round(random.uniform(40.0, 90.0), 1)
@@ -102,10 +108,10 @@ class Device:
             "illuminance": ill,
             "soilMoisture": soil,
             "led": self.led_state,
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+            "timestamp": get_utc_timestamp()
         })
-        self.client.publish(telemetry_topic, telemetry_payload, qos=0)
-        print(f"[{self.device_id}] Published telemetry: T={temp}C, H={hum}%, L={ill}lx, S={soil}%")
+        self.client.publish(telemetry_topic, telemetry_payload, qos=0, retain=False)
+        print(f"[{self.device_id}] Published telemetry: T={temp}C, H={hum}%, L={ill}lx, S={soil}%, LED={self.led_state}")
 
 if __name__ == "__main__":
     devices = []

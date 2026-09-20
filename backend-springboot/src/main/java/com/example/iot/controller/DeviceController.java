@@ -1,5 +1,6 @@
 package com.example.iot.controller;
 
+import com.example.iot.entity.Alert;
 import com.example.iot.entity.Command;
 import com.example.iot.entity.Device;
 import com.example.iot.entity.Telemetry;
@@ -64,10 +65,23 @@ public class DeviceController {
         return ResponseEntity.ok(commandService.getCommandHistory(deviceId, PageRequest.of(page, size)));
     }
 
+    @GetMapping("/devices/{deviceId}/alerts")
+    public ResponseEntity<Page<Alert>> getAlerts(
+            @PathVariable String deviceId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(telemetryService.getAlerts(deviceId, PageRequest.of(page, size)));
+    }
+
     @PostMapping("/devices/{deviceId}/commands")
     @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
     public ResponseEntity<Command> sendCommand(@PathVariable String deviceId, @RequestBody CommandRequest request) {
-        Command command = commandService.sendCommand(deviceId, request.getAction());
+        Command command = commandService.sendCommand(
+                deviceId, 
+                request.getAction(), 
+                request.getLine1() != null ? request.getLine1() : request.getText(), 
+                request.getLine2()
+        );
         return ResponseEntity.ok(command);
     }
 }
@@ -75,4 +89,7 @@ public class DeviceController {
 @Data
 class CommandRequest {
     private String action;
+    private String line1;
+    private String line2;
+    private String text;
 }

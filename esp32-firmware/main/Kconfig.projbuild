@@ -1,0 +1,59 @@
+menu "IoT Smart Environment Configuration"
+
+    config ESP_WIFI_SSID
+        string "WiFi SSID"
+        default "MyWiFiNetwork"
+        help
+            SSID of the Wi-Fi network to connect to.
+
+    config ESP_WIFI_PASSWORD
+        string "WiFi Password"
+        default "MyWiFiPassword"
+        help
+            Password of the Wi-Fi network to connect to.
+
+    config MQTT_BROKER_URL
+        string "MQTT Broker URL"
+        default "mqtt://10.205.26.168:1883"
+        help
+            URL of the EMQX MQTT broker (e.g., mqtt://192.168.1.100:1883).
+            DO NOT use localhost. Use computer LAN IPv4 address.
+
+    config IOT_DEVICE_ID
+        string "Device ID"
+        default "esp32-001"
+        help
+            Unique Device ID according to MQTT contract.
+
+    config DHT_DATA_GPIO
+        int "DHT11 DATA GPIO Pin"
+        default 15
+        help
+            GPIO pin connected to DHT11 DATA (Default GPIO 15).
+
+    config LED_GPIO
+        int "LED GPIO Pin"
+        default 2
+        help
+            GPIO pin connected to LED (Default GPIO 2).
+
+    config BH1750_SDA_GPIO
+        int "BH1750 SDA GPIO Pin"
+        default 8
+        help
+            GPIO pin connected to BH1750 I2C SDA (Default GPIO 8).
+
+    config BH1750_SCL_GPIO
+        int "BH1750 SCL GPIO Pin"
+        default 9
+        help
+            GPIO pin connected to BH1750 I2C SCL (Default GPIO 9).
+
+    config SOIL_MOISTURE_GPIO
+        int "Soil Moisture AO GPIO Pin"
+        default 5
+        help
+            GPIO pin connected to Soil Moisture AO (Default GPIO 5, ADC1_CH4).
+
+endmenu
+

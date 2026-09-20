@@ -2,61 +2,77 @@
 
 Base path: `/api/v1`
 
-## Authentication
+Swagger UI: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)  
+OpenAPI JSON: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 
-### 1. Login
-- **URL:** `/auth/login`
-- **Method:** `POST`
+---
+
+## 1. Authentication (`/api/v1/auth`)
+
+### 1.1 Đăng nhập (Login)
+- **URL:** `POST /api/v1/auth/login`
 - **Body:**
 ```json
 {
-  "username": "admin",
-  "password": "Admin@123"
+  "username": "operator",
+  "password": "Operator@123"
 }
 ```
 - **Response:** (200 OK)
 ```json
 {
-  "accessToken": "eyJhb...",
+  "accessToken": "eyJhbGciOi...",
   "tokenType": "Bearer",
   "expiresIn": 86400,
-  "role": "ADMIN",
-  "username": "admin",
-  "fullName": "Administrator"
+  "role": "OPERATOR",
+  "username": "operator",
+  "fullName": "System Operator"
 }
 ```
 
-## Devices
+---
 
-### 2. Get All Devices
-- **URL:** `/devices`
-- **Method:** `GET`
+## 2. Devices (`/api/v1/devices`)
+
+### 2.1 Lấy danh sách thiết bị
+- **URL:** `GET /api/v1/devices`
 - **Headers:** `Authorization: Bearer <token>`
-- **Response:** List of devices
+- **Response:** (200 OK) Danh sách các thiết bị trong hệ thống.
 
-### 3. Get Device By ID
-- **URL:** `/devices/{deviceId}`
-- **Method:** `GET`
+### 2.2 Lấy chi tiết thiết bị
+- **URL:** `GET /api/v1/devices/{deviceId}`
 - **Headers:** `Authorization: Bearer <token>`
-- **Response:** Device details
+- **Response:** (200 OK)
+```json
+{
+  "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "deviceId": "esp32-001",
+  "name": "Smart Environment Sensor 1",
+  "type": "ESP32",
+  "status": "ONLINE",
+  "ledState": false,
+  "lastSeenAt": "2026-09-14T03:30:00Z"
+}
+```
 
-## Telemetry
+---
 
-### 4. Get Latest Telemetry
-- **URL:** `/devices/{deviceId}/telemetry/latest`
-- **Method:** `GET`
+## 3. Telemetry (`/api/v1/devices/{deviceId}/telemetry`)
+
+### 3.1 Lấy dữ liệu cảm biến mới nhất
+- **URL:** `GET /api/v1/devices/{deviceId}/telemetry/latest`
 - **Headers:** `Authorization: Bearer <token>`
 
-### 5. Get Telemetry History (Paginated)
-- **URL:** `/devices/{deviceId}/telemetry?page=0&size=20&from=ISO8601&to=ISO8601`
-- **Method:** `GET`
+### 3.2 Lấy lịch sử đo lường (Phân trang)
+- **URL:** `GET /api/v1/devices/{deviceId}/telemetry?page=0&size=20&from=ISO8601&to=ISO8601`
 - **Headers:** `Authorization: Bearer <token>`
 
-## Commands
+---
 
-### 6. Send Command
-- **URL:** `/devices/{deviceId}/commands`
-- **Method:** `POST`
+## 4. Commands (`/api/v1/devices/{deviceId}/commands`)
+
+### 4.1 Gửi lệnh điều khiển (Chỉ ADMIN & OPERATOR)
+- **URL:** `POST /api/v1/devices/{deviceId}/commands`
 - **Headers:** `Authorization: Bearer <token>`
 - **Body:**
 ```json
@@ -64,11 +80,46 @@ Base path: `/api/v1`
   "action": "LED_ON"
 }
 ```
-- **Response:** Command status (PENDING/SENT) with `commandId`.
+*(Hoặc `LED_OFF`)*
+- **Response:** (200 OK)
+```json
+{
+  "id": "b76b0d08-52e5-4978-bc60-7078fafd570b",
+  "deviceId": "esp32-001",
+  "action": "LED_ON",
+  "status": "SENT",
+  "createdBy": "operator",
+  "createdAt": "2026-09-14T03:39:18Z"
+}
+```
+*(Nếu là tài khoản `VIEWER`, trả về `403 Forbidden`)*
 
-### 7. Get Command History
-- **URL:** `/devices/{deviceId}/commands?page=0&size=10`
-- **Method:** `GET`
+### 4.2 Lấy lịch sử lệnh & Trạng thái ACK
+- **URL:** `GET /api/v1/devices/{deviceId}/commands?page=0&size=10`
 - **Headers:** `Authorization: Bearer <token>`
 
-Lưu ý: API dùng chuẩn Swagger/OpenAPI, có thể xem trực tiếp tại UI khi Backend chạy: `http://localhost:8080/swagger-ui.html`
+---
+
+## 5. Alerts (`/api/v1/devices/{deviceId}/alerts`) - Chức năng nâng cao
+
+### 5.1 Lấy danh sách cảnh báo (Nhiệt độ > 35°C)
+- **URL:** `GET /api/v1/devices/{deviceId}/alerts?page=0&size=10`
+- **Headers:** `Authorization: Bearer <token>`
+- **Response:** (200 OK)
+```json
+{
+  "content": [
+    {
+      "id": "c1f7b0e2-...",
+      "deviceId": "esp32-001",
+      "type": "HIGH_TEMPERATURE",
+      "message": "Temperature 36.2°C exceeded safety threshold 35.0°C",
+      "val": 36.2,
+      "threshold": 35.0,
+      "createdAt": "2026-09-14T03:40:00Z"
+    }
+  ],
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
