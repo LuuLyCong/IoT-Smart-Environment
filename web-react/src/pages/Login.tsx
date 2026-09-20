@@ -171,21 +171,21 @@ export default function Login() {
           <button
             type="button"
             className="q"
-            onClick={() => fillCredentials('admin', 'admin123')}
+            onClick={() => fillCredentials('admin', 'Admin@123')}
           >
             Admin (Toàn quyền)
           </button>
           <button
             type="button"
             className="q p"
-            onClick={() => fillCredentials('operator', 'operator123')}
+            onClick={() => fillCredentials('operator', 'Operator@123')}
           >
             Operator (Vận hành)
           </button>
           <button
             type="button"
             className="q"
-            onClick={() => fillCredentials('viewer', 'viewer123')}
+            onClick={() => fillCredentials('viewer', 'Viewer@123')}
           >
             Viewer (Chỉ xem)
           </button>
