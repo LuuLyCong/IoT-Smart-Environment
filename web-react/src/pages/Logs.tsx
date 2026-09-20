@@ -51,9 +51,9 @@ export default function Logs() {
   const savedThresholds = (() => {
     try {
       const s = localStorage.getItem('iot_thresholds')
-      return s ? JSON.parse(s) : { temp: 35, soil: 30 }
+      return s ? JSON.parse(s) : { temp: 33, soil: 30 }
     } catch {
-      return { temp: 35, soil: 30 }
+      return { temp: 33, soil: 30 }
     }
   })()
 
@@ -243,7 +243,7 @@ export default function Logs() {
                     <td>
                       <span className="tag pk">{row.val != null ? row.val.toFixed(1) : '--'}</span>
                     </td>
-                    <td>{row.threshold != null ? `${row.threshold}°C` : '35.0°C'}</td>
+                    <td>{row.threshold != null ? `${row.threshold}°C` : '33.0°C'}</td>
                     <td>
                       <span className="tag pk">{row.type || 'Nghiêm trọng'}</span>
                     </td>

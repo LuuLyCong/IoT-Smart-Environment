@@ -28,6 +28,19 @@ public class TelemetryService {
     private final DeviceRepository deviceRepository;
     private final AlertRepository alertRepository;
 
+    private double tempThreshold = 33.0;
+    private double soilThreshold = 30.0;
+    private double humThreshold = 50.0;
+
+    public double getTempThreshold() { return tempThreshold; }
+    public void setTempThreshold(double tempThreshold) { this.tempThreshold = tempThreshold; }
+
+    public double getSoilThreshold() { return soilThreshold; }
+    public void setSoilThreshold(double soilThreshold) { this.soilThreshold = soilThreshold; }
+
+    public double getHumThreshold() { return humThreshold; }
+    public void setHumThreshold(double humThreshold) { this.humThreshold = humThreshold; }
+
     @Transactional
     public void processTelemetry(TelemetryPayload payload) {
         if (payload.getDeviceId() == null)
@@ -65,17 +78,17 @@ public class TelemetryService {
             telemetryRepository.save(telemetry);
             log.info("Saved telemetry for device: {}", payload.getDeviceId());
 
-            // Check high temperature alert (> 35°C)
-            if (temp != null && temp > 35.0) {
-                log.warn("HIGH_TEMPERATURE ALERT for device {}: {}°C (> 35.0°C)", payload.getDeviceId(), temp);
+            // Check high temperature alert (> tempThreshold)
+            if (temp != null && temp > tempThreshold) {
+                log.warn("HIGH_TEMPERATURE ALERT for device {}: {}°C (> {}°C)", payload.getDeviceId(), temp, tempThreshold);
                 Alert alert = new Alert();
                 alert.setId(UUID.randomUUID());
                 alert.setDeviceId(payload.getDeviceId());
                 alert.setType("HIGH_TEMPERATURE");
                 alert.setMessage(
-                        String.format("Temperature %.1f°C exceeded safety threshold 35.0°C", temp));
+                        String.format("Temperature %.1f°C exceeded safety threshold %.1f°C", temp, tempThreshold));
                 alert.setVal(temp);
-                alert.setThreshold(35.0);
+                alert.setThreshold(tempThreshold);
                 alert.setCreatedAt(ZonedDateTime.now());
                 alertRepository.save(alert);
             }

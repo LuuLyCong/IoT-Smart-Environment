@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -83,6 +84,33 @@ public class DeviceController {
                 request.getLine2()
         );
         return ResponseEntity.ok(command);
+    }
+
+    @GetMapping("/settings/thresholds")
+    public ResponseEntity<Map<String, Double>> getThresholds() {
+        return ResponseEntity.ok(Map.of(
+                "temp", telemetryService.getTempThreshold(),
+                "soil", telemetryService.getSoilThreshold(),
+                "hum", telemetryService.getHumThreshold()
+        ));
+    }
+
+    @PostMapping("/settings/thresholds")
+    public ResponseEntity<Map<String, Double>> updateThresholds(@RequestBody Map<String, Double> body) {
+        if (body.containsKey("temp") && body.get("temp") != null) {
+            telemetryService.setTempThreshold(body.get("temp"));
+        }
+        if (body.containsKey("soil") && body.get("soil") != null) {
+            telemetryService.setSoilThreshold(body.get("soil"));
+        }
+        if (body.containsKey("hum") && body.get("hum") != null) {
+            telemetryService.setHumThreshold(body.get("hum"));
+        }
+        return ResponseEntity.ok(Map.of(
+                "temp", telemetryService.getTempThreshold(),
+                "soil", telemetryService.getSoilThreshold(),
+                "hum", telemetryService.getHumThreshold()
+        ));
     }
 }
 

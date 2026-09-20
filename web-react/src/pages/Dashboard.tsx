@@ -27,7 +27,7 @@ interface ThresholdConfig {
 }
 
 const DEFAULT_THRESHOLDS: ThresholdConfig = {
-  temp: 35.0,
+  temp: 33.0,
   soil: 30.0,
   hum: 30.0,
 }
@@ -611,7 +611,7 @@ export default function Dashboard() {
   }
 
   // Save thresholds
-  const handleSaveThresholds = () => {
+  const handleSaveThresholds = async () => {
     const updated = {
       temp: tempInput,
       soil: soilInput,
@@ -619,6 +619,11 @@ export default function Dashboard() {
     }
     setThresholds(updated)
     localStorage.setItem('iot_thresholds', JSON.stringify(updated))
+    try {
+      await api.post('/settings/thresholds', updated)
+    } catch (e) {
+      console.error('Failed to sync thresholds to backend', e)
+    }
     setModalOpen(false)
     setDismissedBanner('')
     addToast('Đã lưu ngưỡng cảnh báo')
