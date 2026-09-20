@@ -115,11 +115,15 @@ graph TD
 
 ## 🚀 5. Hướng Dẫn Khởi Chạy Dự Án Bằng Docker
 
-Chỉ cần chạy 1 lệnh duy nhất để khởi động toàn bộ hạ tầng (PostgreSQL, EMQX, Spring Boot, Web Dashboard, Device Simulator):
+Chỉ cần chạy 1 lệnh duy nhất để khởi động toàn bộ hạ tầng chính (PostgreSQL, EMQX Broker, Spring Boot Backend, React Web Dashboard):
 
 ```bash
 docker compose up -d
 ```
+
+> [!NOTE]
+> Thiết bị giả lập (`simulator`) đã được cấu hình tự động **TẮT** mặc định để ưu tiên nhận dữ liệu thực tế từ kit **ESP32-S3**. Nếu muốn bật lại thiết bị ảo để test khi không có phần cứng, chỉ cần chạy:  
+> `docker compose --profile simulation up -d`
 
 Kiểm tra trạng thái hệ thống:
 ```bash
